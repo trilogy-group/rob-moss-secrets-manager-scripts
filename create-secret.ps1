@@ -3,7 +3,7 @@
   Creates or updates a secret in Secrets Manager for EC2 Instances, EC2 Auto-Scaling Groups, EC2 Key Pairs, RDS databases or on-premise databases.
 
   .DESCRIPTION
-  This script validates the set of parameters passed and uses the AWS Tools for PowerShell to create or update a secret in Secrets Manager.
+  This script validates the set of parameters passed and uses the AWS CLI to create or update a secret in Secrets Manager.
 
   .PARAMETER Region
   Must be a valid AWS region for the provided account. Attempt to determine this from the ARN if it is not supplied.
@@ -42,7 +42,7 @@
 
   .PARAMETER EscalationPassword Optional in some cases. Is it ever mandatory for a specified EscalationMethod?
 
-  .PARAMETER Notes
+  .PARAMETER Notes Any sensitive information you wish to store with the secret.
 
   .INPUTS
   None. You cannot pipe objects to this script.
@@ -51,24 +51,27 @@
   System.String. This script outputs the Secrets Manager secret ID.
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "" -AccountID "" -ProfileName "" -Type "" -Description "" -ARN "" -Environment "" -Username "" -Password "" -Engine "" -DBHost "" -DBPort "" -DBName "" -PrivateKey "" -PrivateKeyPassword "" -EscalationMethod "" -EscalationUsername "" -EscalationPassword ""
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2Instance" -Description "My EC2 Instance" -ARN "arn:aws:ec2:us-east-1:012345678901:instance/i-0123456789abcdef0" -Environment "prod" -Username "ec2-user"
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "" -AccountID "" -ProfileName "" -Type "" -Description "" -ARN "" -Environment "" -Username "" -Password "" -Engine "" -DBHost "" -DBPort "" -DBName "" -PrivateKey "" -PrivateKeyPassword "" -EscalationMethod "" -EscalationUsername "" -EscalationPassword ""
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2ASG" -Description "My EC2 Auto-Scaling Group" -ARN "arn:aws:autoscaling:us-east-1:012345678901:autoScalingGroup:01234567-890a-1234-5678-9abcdef01234:autoScalingGroupName/my-ec2-asg" -Environment "staging" -Username "Administrator" -Password 'rE0qU0uY2mY8mM6k'
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "" -AccountID "" -ProfileName "" -Type "" -Description "" -ARN "" -Environment "" -Username "" -Password "" -Engine "" -DBHost "" -DBPort "" -DBName "" -PrivateKey "" -PrivateKeyPassword "" -EscalationMethod "" -EscalationUsername "" -EscalationPassword ""
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2KeyPair" -Description "My EC2 Key Pair" -ARN "arn:aws:ec2:us-east-1:162174280605:key-pair/my-ec2-key-pair" -Environment "qa" -PrivateKey "-----BEGIN RSA PRIVATE KEY-----\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000=\n-----END RSA PRIVATE KEY-----"
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "" -AccountID "" -ProfileName "" -Type "" -Description "" -ARN "" -Environment "" -Username "" -Password "" -Engine "" -DBHost "" -DBPort "" -DBName "" -PrivateKey "" -PrivateKeyPassword "" -EscalationMethod "" -EscalationUsername "" -EscalationPassword ""
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "RDSCluster" -Description "My RDS Cluster" -ARN "arn:aws:rds:us-east-1:012345678901:cluster:my-rds-cluster" -Environment "dev" -Username "admin" -Password 'xY2kU1kA4vB3lQ4e' -Engine "mysql" -DBHost "my-rds-clustercluster.cluster-012345678901.us-east-1.rds.amazonaws.com" -DBPort 3306 -DBName "mydatabase"
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "" -AccountID "" -ProfileName "" -Type "" -Description "" -ARN "" -Environment "" -Username "" -Password "" -Engine "" -DBHost "" -DBPort "" -DBName "" -PrivateKey "" -PrivateKeyPassword "" -EscalationMethod "" -EscalationUsername "" -EscalationPassword ""
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "RDSInstance" -Description "My RDS Instance" -ARN "arn:aws:rds:us-east-1:012345678901:db:my-rds-instance" -Environment "prod" -Username "admin" -Password 'gG7fY7cY8hZ9gU9y' -Engine "oracle" -DBHost "my-rds-instance.012345678901.us-east-1.rds.amazonaws.com" -DBPort 1521 -DBName "mydatabase"
+
+  .EXAMPLE
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "OnPremiseDatabase" -Description "My on-premise database" -Environment "prod" -Username "admin" -Password 'lV3zY1mZ3hA7kP0a' -Engine "sqlserver" -DBHost "10.13.16.19" -DBPort 1433 -DBName "mydatabase"
 #>
 
 param (
     [Parameter(Mandatory = $true)]
-    [ValidateSet([RegionNames])]
+    [ValidatePattern("[a-zA-Z0-9\-]+")]
     [String]
     $Region = "us-east-1",
     [Parameter(Mandatory = $true)]
@@ -86,11 +89,11 @@ param (
     [String]
     $Description,
     [Parameter(Mandatory = $false)]
-    [ValidatePattern("^arn:(?P<Partition>[^:\n]*):(?P<Service>[^:\n]*):(?P<Region>[^:\n]*):(?P<AccountID>[^:\n]*):(?P<Ignore>(?P<ResourceType>[^:\/\n]*)[:\/])?(?P<Resource>.*)$")]
+    [ValidatePattern("^arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:\/\n]*[:\/]?.*$")]
     [String]
     $ARN,
     [Parameter(Mandatory = $true)]
-    [ValidateSet("Production", "Staging", "QA", "Development")]
+    [ValidateSet("prod", "staging", "qa", "dev")]
     [String]
     $Environment,
     [Parameter(Mandatory = $false)]
@@ -100,7 +103,7 @@ param (
     [String]
     $Password,
     [Parameter(Mandatory = $false)]
-    [ValidateSet("mariadb", "mysql", "postgres", "oracle", "sqlserver")]
+    [ValidateSet("mariadb", "mysql", "postgres", "oracle", "sqlserver", "neptune")]
     [String]
     $Engine,
     [Parameter(Mandatory = $false)]
@@ -109,7 +112,7 @@ param (
     [Parameter(Mandatory = $false)]
     [ValidateRange(1, 65535)]
     [int]
-    $DBPort = 3306,
+    $DBPort,
     [Parameter(Mandatory = $false)]
     [String]
     $DBName,
@@ -128,19 +131,15 @@ param (
     $EscalationUsername,
     [Parameter(Mandatory = $false)]
     [String]
-    $EscalationPassword
+    $EscalationPassword,
+    [Parameter(Mandatory = $false)]
+    [String]
+    $Notes
 )
-
-Class RegionNames : System.Management.Automation.IValidateSetValuesGenerator {
-    [String[]] GetValidValues() {
-        $RegionNames = (aws ec2 describe-regions | ConvertFrom-Json).Regions.RegionName
-        return [String[]] $RegionNames
-    }
-}
 
 $Response = aws --region "$($Region)" --profile "$($ProfileName)" sts get-caller-identity | ConvertFrom-Json
 if (-Not($Response.Account -eq $AccountID)) {
-    Write-Error -Message "The specified account ID does not match the AWS CLI profile in use."
+    Write-Error "The specified account ID does not match the AWS CLI profile in use."
     Return $false
 }
 
@@ -156,378 +155,380 @@ $SecretStringObject = [PSCustomObject]@{}
 switch ($Type) {
     "EC2Instance" {
         if ($ARN -eq "") {
-            Write-Error -Message "The ARN cannot be empty for an EC2 Instance."
+            Write-Error "The ARN cannot be empty for an EC2 Instance."
             Return $false
         }
         $EC2InstanceID = $ARN -replace '^.*\/'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-instances --instance-ids "$($EC2InstanceID)" | ConvertFrom-Json
-        if (-Not($Response.Reservations[0].Instances[0].InstanceId -eq $EC2InstanceID)) {
-            Write-Error -Message "The instance was not found using this region and profile name."
+        if ($Response.Reservations.Count -eq 0) {
+            Write-Error "The instance was not found using this region and profile name."
             Return $false
         }
         if ($Username -eq "") {
-            Write-Error -Message "A username is required for an EC2 instance."
+            Write-Error "A username is required for an EC2 instance."
             Return $false
         }
         if ($Password -eq "" -and $PrivateKey -eq "") {
             $EC2KeyPairSecretName = "escwm-$($Response.Reservations[0].Instances[0].KeyName)"
-            $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
+            $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager describe-secret --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
             if (-Not($SecretsManagerResponse.Name -eq $EC2KeyPairSecretName)) {
-                Write-Error -Message "You must maintain the secret for the EC2 Key Pair to maintain a secret for an EC2 instance without a password or private key."
+                Write-Error "You must maintain the secret for the EC2 Key Pair to maintain a secret for an EC2 instance without a password or private key."
                 Return $false
             }
         }
         if (-Not($Engine -eq "")) {
-            Write-Warning -Message "The database engine is ignored for EC2 instances."
+            Write-Warning "The database engine is ignored for EC2 instances."
         }
         if (-Not($DBHost -eq "")) {
-            Write-Warning -Message "The database host is ignored for EC2 instances."
+            Write-Warning "The database host is ignored for EC2 instances."
         }
         if (-Not($DBPort -eq "")) {
-            Write-Warning -Message "The database port is ignored for EC2 instances."
+            Write-Warning "The database port is ignored for EC2 instances."
         }
         if (-Not($DBName -eq "")) {
-            Write-Warning -Message "The database name is ignored for EC2 instances."
+            Write-Warning "The database name is ignored for EC2 instances."
         }
         if ($PrivateKey -like "*ENCRYPTED*" -and $PrivateKeyPassword -eq "") {
-            Write-Error -Message "You must supply the password for a password-protected private key."
+            Write-Error "You must supply the password for a password-protected private key."
             Return $False
         }
         $SecretName = "eswcm-$($Response.Reservations[0].Instances[0].InstanceId)"
-        $SecretStringObject.username = $Username
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         if (-Not($Password -eq "")) {
-            $SecretStringObject.password = $Password
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
         }
         if (-Not($PrivateKey -eq "")) {
-            $SecretStringObject.privatekey = $PrivateKey
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekey' -Value $PrivateKey
         }
         if (-Not($PrivateKeyPassword -eq "")) {
-            $SecretStringObject.privatekeypassword = $PrivateKeyPassword
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekeypassword' -Value $PrivateKeyPassword
         }
         if (-Not($EsclationMethod -eq "")) {
-            $SecretStringObject.escalationmethod = $EscalationMethod
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'escalationmethod' -Value $EscalationMethod
         }
         if (-Not($EscalationUsername -eq "")) {
-            $SecretStringObject.escalationusername = $EscalationUsername
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'escalationusername' -Value $EscalationUsername
         }
-        if (-Not($EsclationPassword -eq "")) {
-            $SecretStringObject.escalationpassword = $EscalationPassword
+        if (-Not($EscalationPassword -eq "")) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'escalationpassword' -Value $EscalationPassword
         }
         if (-Not($Notes -eq "")) {
-            $SecretStringObject.notes = $Notes
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
         Break
     }
     "EC2ASG" {
         if ($ARN -eq "") {
-            Write-Error -Message "The ARN cannot be empty for an EC2 Auto Scaling Group."
+            Write-Error "The ARN cannot be empty for an EC2 Auto Scaling Group."
             Return $false
         }
         $EC2ASGName = $ARN -replace '^.*\/'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" autoscaling describe-auto-scaling-groups --auto-scaling-group-names "$($EC2ASGName)" | ConvertFrom-Json
         If (-Not($Response.AutoScalingGroups[0].AutoScalingGroupName -eq $EC2ASGName)) {
-            Write-Error -Message "The Auto Scaling Group was not found using this region and profile name."
+            Write-Error "The Auto Scaling Group was not found using this region and profile name."
             Return $false
         }
         if ($Username -eq "") {
-            Write-Error -Message "A username is required for an EC2 Auto Scaling Group."
+            Write-Error "A username is required for an EC2 Auto Scaling Group."
             Return $false
         }
         if ($Password -eq "" -and $PrivateKey -eq "") {
             if ($Response.AutoScalingGroups[0].LaunchConfigurationName) {
-                $LaunchConfigurationResponse = aws --region "$($Region)" --profile "$($ProfileName)" autoscaling describe-launch-configurations --launch-configuration-names "$($Response.AutoScalingGroups[0].LaunchConfigurationName)"
+                $LaunchConfigurationResponse = aws --region "$($Region)" --profile "$($ProfileName)" autoscaling describe-launch-configurations --launch-configuration-names "$($Response.AutoScalingGroups[0].LaunchConfigurationName)" | ConvertFrom-Json
                 $EC2KeyPairName = $LaunchConfigurationResponse.LaunchConfigurations[0].KeyName
-            } elseif ($Response.AutoStaclingGroups[0].LaunchTemplate.LaunchTemplateId -and $Response.AutoStaclingGroups[0].LaunchTemplate.Version) {
-                $LaunchTemplateResponse = aws --region "$($Region)" --profile "$($ProfileName)" autoscaling describe-launch-template-versions --launch-template-id "$($Response.AutoStaclingGroups[0].LaunchTemplate.LaunchTemplateId)" --versions "$($Response.AutoStaclingGroups[0].LaunchTemplate.Version)"
+            } elseif ($Response.AutoScalingGroups[0].LaunchTemplate.LaunchTemplateId -and $Response.AutoScalingGroups[0].LaunchTemplate.Version) {
+                $LaunchTemplateResponse = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-launch-template-versions --launch-template-id "$($Response.AutoScalingGroups[0].LaunchTemplate.LaunchTemplateId)" --versions "$($Response.AutoScalingGroups[0].LaunchTemplate.Version)" | ConvertFrom-Json
                 $EC2KeyPairName = $LaunchTemplateResponse.LaunchTemplateVersions[0].LaunchTemplateData.KeyName
             }
             if (-Not($EC2KeyPairName)) {
-                Write-Error -Message "Could not find the EC2 Key Pair associated with the Auto Scaling Group."
+                Write-Error "Could not find the EC2 Key Pair associated with the Auto Scaling Group."
                 Return $false
             } else {
                 $EC2KeyPairSecretName = "eswcm-$($EC2KeyPairName)"
-                $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
+                $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager describe-secret --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
                 if (-Not($SecretsManagerResponse.Name -eq $EC2KeyPairSecretName)) {
-                    Write-Error -Message "You must maintain the secret for the EC2 Key Pair to maintain a secret for an EC2 Auto Scaling Group without a password or private key."
+                    Write-Error "You must maintain the secret for the EC2 Key Pair to maintain a secret for an EC2 Auto Scaling Group without a password or private key."
                     Return $false
                 }
             }
         }
         if (-Not($Engine -eq "")) {
-            Write-Warning -Message "The database engine is ignored for EC2 Auto Scaling Groups."
+            Write-Warning "The database engine is ignored for EC2 Auto Scaling Groups."
         }
         if (-Not($DBHost -eq "")) {
-            Write-Warning -Message "The database host is ignored for EC2 Auto Scaling Groups."
+            Write-Warning "The database host is ignored for EC2 Auto Scaling Groups."
         }
         if (-Not($DBPort -eq "")) {
-            Write-Warning -Message "The database port is ignored for EC2 Auto Scaling Groups."
+            Write-Warning "The database port is ignored for EC2 Auto Scaling Groups."
         }
         if (-Not($DBName -eq "")) {
-            Write-Warning -Message "The database name is ignored for EC2 Auto Scaling Groups."
+            Write-Warning "The database name is ignored for EC2 Auto Scaling Groups."
         }
         if ($PrivateKey -like "*ENCRYPTED*" -and $PrivateKeyPassword -eq "") {
-            Write-Error -Message "You must supply the password for a password-protected private key."
+            Write-Error "You must supply the password for a password-protected private key."
             Return $False
         }
         $SecretName = "eswcm-$($Response.AutoScalingGroups[0].AutoScalingGroupName)"
-        $SecretStringObject.username = $Username
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         if (-Not($Password -eq "")) {
-            $SecretStringObject.password = $Password
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
         }
         if (-Not($PrivateKey -eq "")) {
-            $SecretStringObject.privatekey = $PrivateKey
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekey' -Value $PrivateKey
         }
         if (-Not($PrivateKeyPassword -eq "")) {
-            $SecretStringObject.privatekeypassword = $PrivateKeyPassword
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekeypassword' -Value $PrivateKeyPassword
         }
         if (-Not($EscalationMethod -eq "")) {
-            $SecretStringObject.escalationmethod = $EscalationMethod
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'escalationmethod' -Value $EscalationMethod
         }
         if (-Not($EscalationUsername -eq "")) {
-            $SecretStringObject.escalationusername = $EscalationUsername
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'escalationusername' -Value $EscalationUsername
         }
         if (-Not($EscalationPassword -eq "")) {
-            $SecretStringObject.escalationpassword = $EscalationPassword
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'escalationpassword' -Value $EscalationPassword
         }
         if (-Not($Notes -eq "")) {
-            $SecretStringObject.notes = $Notes
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
         Break
     }
     "EC2KeyPair" {
         if ($ARN -eq "") {
-            Write-Error -Message "The ARN cannot be empty for an EC2 Key Pair."
+            Write-Error "The ARN cannot be empty for an EC2 Key Pair."
             Return $false
         }
         $EC2KeyPairName = $ARN -replace '^.*\/'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-key-pairs --key-name "$($EC2KeyPairName)" | ConvertFrom-Json
         if (-Not($Response.KeyPairs.KeyName -eq $EC2KeyPairName)) {
-            Write-Error -Message "The EC2 Key Pair was not found using this region and profile name."
+            Write-Error "The EC2 Key Pair was not found using this region and profile name."
             Return $false
         }
-        if ($Username -eq "") {
-            Write-Warning -Message "The username is ignored for EC2 Key Pairs."
+        if (-Not($Username -eq "")) {
+            Write-Warning "The username is ignored for EC2 Key Pairs."
         }
-        if ($Password -eq "") {
-            Write-Warning -Message "The password is ignored for EC2 Key Pairs."
+        if (-Not($Password -eq "")) {
+            Write-Warning "The password is ignored for EC2 Key Pairs."
         }
         if (-Not($Engine -eq "")) {
-            Write-Warning -Message "The database engine is ignored for EC2 Key Pairs."
+            Write-Warning "The database engine is ignored for EC2 Key Pairs."
         }
         if (-Not($DBHost -eq "")) {
-            Write-Warning -Message "The database host is ignored for EC2 Key Pairs."
+            Write-Warning "The database host is ignored for EC2 Key Pairs."
         }
         if (-Not($DBPort -eq "")) {
-            Write-Warning -Message "The database port is ignored for EC2 Key Pairs."
+            Write-Warning "The database port is ignored for EC2 Key Pairs."
         }
         if (-Not($DBName -eq "")) {
-            Write-Warning -Message "The database name is ignored for EC2 Key Pairs."
+            Write-Warning "The database name is ignored for EC2 Key Pairs."
         }
         if ($PrivateKey -eq "") {
-            Write-Error -Message "The private key is required for an EC2 Key Pair."
+            Write-Error "The private key is required for an EC2 Key Pair."
             Return $false
         }
         if ($PrivateKey -like "*ENCRYPTED*" -and $PrivateKeyPassword -eq "") {
-            Write-Error -Message "You must supply the password for a password-protected private key."
+            Write-Error "You must supply the password for a password-protected private key."
             Return $False
         }
         $SecretName = "eswcm-$($Response.KeyPairs.KeyName)"
         if (-Not($PrivateKey -eq "")) {
-            $SecretStringObject.privatekey = $PrivateKey
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekey' -Value $PrivateKey
         }
-        if (-Not($PrivateKeyPassword -eq "")) {
-            $SecretStringObject.privatekeypassword = $PrivateKeyPassword
+        if ($PrivateKey -like "*ENCRYPTED*" -and -Not($PrivateKeyPassword -eq "")) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekeypassword' -Value $PrivateKeyPassword
         }
-        if (-Not($EscalationMethod -eq "")) {
-            $SecretStringObject.escalationmethod = $EscalationMethod
+        if (-Not($EscalationMethod -eq "" -or $EscalationMethod -eq "sudo")) {
+            Write-Warning "The escalation method is ignored for an EC2 Key Pair."
         }
         if (-Not($EscalationUsername -eq "")) {
-            $SecretStringObject.escalationusername = $EscalationUsername
+            Write-Warning "The escalation username is ignored for an EC2 Key Pair."
         }
         if (-Not($EscalationPassword -eq "")) {
-            $SecretStringObject.escalationpassword = $EscalationPassword
+            Write-Warning "The escalation password is ignored for an EC2 Key Pair."
         }
         if (-Not($Notes -eq "")) {
-            $SecretStringObject.notes = $Notes
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
         Break
     }
     "RDSCluster" {
         if ($ARN -eq "") {
-            Write-Error -Message "The ARN cannot be empty for an RDS Cluster."
+            Write-Error "The ARN cannot be empty for an RDS Cluster."
             Return $false
         }
-        $RDSClusterName = $ARN -replace '^.*\/'
-        $Response = aws --region "$($Region)" --profile "$($ProfileName)" describe-db-clusters --db-cluster-identifier "$($RDSClusterName)" | ConvertFrom-Json
+        $RDSClusterName = $ARN -replace '^.*\:'
+        $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-clusters --db-cluster-identifier "$($RDSClusterName)" | ConvertFrom-Json
         if (-Not($Response.DBClusters.DBClusterIdentifier -eq $RDSClusterName)) {
-            Write-Error -Message "The RDS database was not found using this region and profile name."
+            Write-Error "The RDS database was not found using this region and profile name."
+            Return $false
         }
         if ($Username -eq "") {
-            Write-Error -Message "A username is required for an RDS Cluster."
+            Write-Error "A username is required for an RDS Cluster."
             Return $false
         }
         if ($Password -eq "") {
-            Write-Error -Message "A password is required for an RDS Cluster."
+            Write-Error "A password is required for an RDS Cluster."
             Return $false
         }
         if ($Engine -eq "") {
-            Write-Error -Message "The database engine is required for an RDS Cluster."
+            Write-Error "The database engine is required for an RDS Cluster."
             Return $false
         }
         if ($DBHost -eq "") {
-            Write-Error -Message "The database host is required for an RDS Cluster."
+            Write-Error "The database host is required for an RDS Cluster."
             Return $false
         }
         if ($DBPort -eq "") {
-            Write-Error -Message "The database port is required for an RDS Cluster."
+            Write-Error "The database port is required for an RDS Cluster."
             Return $false
         }
         if ($DBName -eq "") {
-            Write-Error -Message "The database name is required for an RDS Cluster."
+            Write-Error "The database name is required for an RDS Cluster."
             Return $false
         }
         if (-Not($PrivateKey -eq "")) {
-            Write-Warning -Message "The private key is ignored for an RDS Cluster."
+            Write-Warning "The private key is ignored for an RDS Cluster."
         }
         if (-Not($PrivateKeyPassword -eq "")) {
-            Write-Warning -Message "The private key password is ignored for an RDS Cluster."
+            Write-Warning "The private key password is ignored for an RDS Cluster."
         }
-        if (-Not($EscalationMethod -eq "")) {
-            Write-Warning -Message "The escalation method is ignored for an RDS Cluster."
+        if (-Not($EscalationMethod -eq "" -or $EscalationMethod -eq "sudo")) {
+            Write-Warning "The escalation method is ignored for an RDS Cluster."
         }
         if (-Not($EscalationUsername -eq "")) {
-            Write-Warning -Message "The escalation username is ignored for an RDS Cluster."
+            Write-Warning "The escalation username is ignored for an RDS Cluster."
         }
         if (-Not($EscalationPassword -eq "")) {
-            Write-Warning -Message "The escalation password is ignored for an RDS Cluster."
+            Write-Warning "The escalation password is ignored for an RDS Cluster."
         }
         $SecretName = "eswcm-$($Response.DBClusters.DBClusterIdentifier)"
-        $SecretStringObject.username = $Username
-        $SecretStringObject.password = $Password
-        $SecretStringObject.engine = $Engine
-        $SecretStringObject.host = $DBHost
-        $SecretStringObject.port = $DBPort
-        $SecretStringObject.dbname = $DBName
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'host' -Value $DBHost
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'port' -Value $DBPort
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'dbname' -Value $DBName
         if (-Not($Notes -eq "")) {
-            $SecretStringObject.notes = $Notes
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
         Break
     }
     "RDSInstance" {
         if ($ARN -eq "") {
-            Write-Error -Message "The ARN cannot be empty for an RDS Instance."
+            Write-Error "The ARN cannot be empty for an RDS Instance."
             Return $false
         }
-        $RDSInstanceName = $ARN -replace '^.*\/'
-        $Response = aws --region "$($Region)" --profile "$($ProfileName)" describe-db-instances --db-instance-identifier "$($RDSInstanceName)" | ConvertFrom-Json
+        $RDSInstanceName = $ARN -replace '^.*\:'
+        $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-instances --db-instance-identifier "$($RDSInstanceName)" | ConvertFrom-Json
         if (-Not($Response.DBInstances.DBInstanceIdentifier -eq $RDSInstanceName)) {
-            Write-Error -Message "The RDS database was not found using this region and profile name."
+            Write-Error "The RDS database was not found using this region and profile name."
+            Return $false
         }
         if ($Username -eq "") {
-            Write-Error -Message "A username is required for an RDS Instance."
+            Write-Error "A username is required for an RDS Instance."
             Return $false
         }
         if ($Password -eq "") {
-            Write-Error -Message "A password is required for an RDS Instance."
+            Write-Error "A password is required for an RDS Instance."
             Return $false
         }
         if ($Engine -eq "") {
-            Write-Error -Message "The database engine is required for an RDS Instance."
+            Write-Error "The database engine is required for an RDS Instance."
             Return $false
         }
         if ($DBHost -eq "") {
-            Write-Error -Message "The database host is required for an RDS Instance."
+            Write-Error "The database host is required for an RDS Instance."
             Return $false
         }
         if ($DBPort -eq "") {
-            Write-Error -Message "The database port is required for an RDS Instance."
+            Write-Error "The database port is required for an RDS Instance."
             Return $false
         }
         if ($DBName -eq "") {
-            Write-Error -Message "The database name is required for an RDS Instance."
+            Write-Error "The database name is required for an RDS Instance."
             Return $false
         }
         if (-Not($PrivateKey -eq "")) {
-            Write-Warning -Message "The private key is ignored for an RDS Instance."
+            Write-Warning "The private key is ignored for an RDS Instance."
         }
         if (-Not($PrivateKeyPassword -eq "")) {
-            Write-Warning -Message "The private key password is ignored for an RDS Instance."
+            Write-Warning "The private key password is ignored for an RDS Instance."
         }
-        if (-Not($EscalationMethod -eq "")) {
-            Write-Warning -Message "The escalation method is ignored for an RDS Instance."
+        if (-Not($EscalationMethod -eq "" -or $EscalationMethod -eq "sudo")) {
+            Write-Warning "The escalation method is ignored for an RDS Instance."
         }
         if (-Not($EscalationUsername -eq "")) {
-            Write-Warning -Message "The escalation username is ignored for an RDS Instance."
+            Write-Warning "The escalation username is ignored for an RDS Instance."
         }
         if (-Not($EscalationPassword -eq "")) {
-            Write-Warning -Message "The escalation password is ignored for an RDS Instance."
+            Write-Warning "The escalation password is ignored for an RDS Instance."
         }
         $SecretName = "eswcm-$($Response.DBInstances.DBInstanceIdentifier)"
-        $SecretStringObject.username = $Username
-        $SecretStringObject.password = $Password
-        $SecretStringObject.engine = $Engine
-        $SecretStringObject.host = $DBHost
-        $SecretStringObject.port = $DBPort
-        $SecretStringObject.dbname = $DBName
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'host' -Value $DBHost
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'port' -Value $DBPort
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'dbname' -Value $DBName
         if (-Not($Notes -eq "")) {
-            $SecretStringObject.notes = $Notes
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
         Break
     }
     "OnPremiseDatabase" {
         if (-Not($ARN -eq "")) {
-            Write-Warning -Message "The ARN is not used for an on-premise database."
+            Write-Warning "The ARN is not used for an on-premise database."
             Return $false
         }
         if ($Username -eq "") {
-            Write-Error -Message "A username is required for an on-premise database."
+            Write-Error "A username is required for an on-premise database."
             Return $false
         }
         if ($Password -eq "") {
-            Write-Error -Message "A password is required for an on-premise database."
+            Write-Error "A password is required for an on-premise database."
             Return $false
         }
         if ($Engine -eq "") {
-            Write-Error -Message "The database engine is required for an on-premise database."
+            Write-Error "The database engine is required for an on-premise database."
             Return $false
         }
         if ($DBHost -eq "") {
-            Write-Error -Message "The database host is required for an on-premise database."
+            Write-Error "The database host is required for an on-premise database."
             Return $false
         }
         if ($DBPort -eq "") {
-            Write-Error -Message "The database port is required for an on-premise database."
+            Write-Error "The database port is required for an on-premise database."
             Return $false
         }
         if ($DBName -eq "") {
-            Write-Error -Message "The database name is required for an on-premise database."
+            Write-Error "The database name is required for an on-premise database."
             Return $false
         }
         if (-Not($PrivateKey -eq "")) {
-            Write-Warning -Message "The private key is ignored for an on-premise database."
+            Write-Warning "The private key is ignored for an on-premise database."
         }
         if (-Not($PrivateKeyPassword -eq "")) {
-            Write-Warning -Message "The private key is ignored for an on-premise database."
+            Write-Warning "The private key is ignored for an on-premise database."
         }
-        if (-Not($EscalationMethod -eq "")) {
-            Write-Warning -Message "The escalation method is ignored for an on-premise database."
+        if (-Not($EscalationMethod -eq "" -or $EscalationMethod -eq "sudo")) {
+            Write-Warning "The escalation method is ignored for an on-premise database."
         }
         if (-Not($EscalationUsername -eq "")) {
-            Write-Warning -Message "The escalation username is ignored for an on-premise database."
+            Write-Warning "The escalation username is ignored for an on-premise database."
         }
         if (-Not($EscalationPassword -eq "")) {
-            Write-Warning -Message "The escalation password is ignored for an on-premise database."
+            Write-Warning "The escalation password is ignored for an on-premise database."
         }
-        Write-Warning -Message "There is no resource validation performed for an on-premise database."
+        Write-Warning "There is no resource validation performed for an on-premise database."
         $SecretName = "eswcm-$($DBName)"
-        $SecretStringObject.username = $Username
-        $SecretStringObject.password = $Password
-        $SecretStringObject.engine = $Engine
-        $SecretStringObject.host = $DBHost
-        $SecretStringObject.port = $DBPort
-        $SecretStringObject.dbname = $DBName
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'host' -Value $DBHost
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'port' -Value $DBPort
+        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'dbname' -Value $DBName
         if (-Not($Notes -eq "")) {
-            $SecretStringObject.notes = $Notes
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
         Break
     }
@@ -549,11 +550,13 @@ if ($Response.Name -eq $SecretName) {
 
 $SecretString = ConvertTo-Json $SecretStringObject
 
+Write-Output $SecretString
+
 if ($SecretExists) {
-    $SecretUpdate = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager update-secret --secret-id "$($SecretName)" --description "$($Description)" --secret-string "$($SecretString)" | ConvertFrom-Json
+    $SecretUpdate = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager update-secret --secret-id "$($SecretName)" --description "$($Description)" --secret-string '$($SecretString)' | ConvertFrom-Json
     aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager tag-resource --secret-id "$($SecretName)" --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($ARN)" Key="Environment",Value="$($Environment)"
     Return $SecretUpdate.Name
 } else {
-    $SecretCreation = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager create-secret --name "$($SecretName)" --client-request-token "$([guid]::NewGuid())" --description "$($Description)" --secret-string "$($SecretString)" --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($ARN)" Key="Environment",Value="$($Environment)" | ConvertFrom-Json
+    $SecretCreation = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager create-secret --name "$($SecretName)" --client-request-token "$([guid]::NewGuid())" --description "$($Description)" --secret-string '$($SecretString)' --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($ARN)" Key="Environment",Value="$($Environment)" | ConvertFrom-Json
     Return $SecretCreation.Name
 }
