@@ -49,6 +49,16 @@ Write-Output "List of ARNs missing secrets in Secrets Manager:"
 Write-Output "`r`n"
 
 foreach ($Region in $RegionNames) {
+    $EC2KeyPairs = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-key-pairs | ConvertFrom-Json
+    foreach ($EC2KeyPair in $EC2KeyPairs.KeyPairs) {
+        $ARN = "arn:aws:ec2:$($Region):$($AccountID):key-pair/$($EC2KeyPair.KeyName)"
+        $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARN)" | ConvertFrom-Json
+        if (-Not($SecretList.SecretList[0].ARN)) {
+            Write-Output $ARN
+        }
+    }
+}
+foreach ($Region in $RegionNames) {
     $EC2Instances = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-instances | ConvertFrom-Json
     foreach ($Reservation in $EC2Instances.Reservations) {
         if (-Not($Reservation.RequesterID -eq "940372691376")) {
@@ -68,16 +78,6 @@ foreach ($Region in $RegionNames) {
         $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($EC2ASG.AutoScalingGroupARN)" | ConvertFrom-Json
         if (-Not($SecretList.SecretList[0].ARN)) {
             Write-Output $EC2ASG.AutoScalingGroupARN
-        }
-    }
-}
-foreach ($Region in $RegionNames) {
-    $EC2KeyPairs = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-key-pairs | ConvertFrom-Json
-    foreach ($EC2KeyPair in $EC2KeyPairs.KeyPairs) {
-        $ARN = "arn:aws:ec2:$($Region):$($AccountID):key-pair/$($EC2KeyPair.KeyName)"
-        $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARN)" | ConvertFrom-Json
-        if (-Not($SecretList.SecretList[0].ARN)) {
-            Write-Output $ARN
         }
     }
 }
