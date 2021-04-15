@@ -43,8 +43,8 @@ if (-Not($Response.Account -eq $AccountID)) {
 
 $RegionNames = (aws ec2 describe-regions | ConvertFrom-Json).Regions.RegionName | Sort-Object
 
-Write-Output "List of ARNs missing secrets in Secrets Manager:"
-Write-Output "`r`n"
+Write-Output "List of ARNs missing secrets in Secrets Manager in account $($AccountID) with profile name $($ProfileName):"
+Write-Output "`n"
 
 foreach ($Region in $RegionNames) {
     $EC2Instances = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-instances | ConvertFrom-Json
@@ -113,3 +113,5 @@ foreach ($Region in $RegionNames) {
         }
     }
 }
+
+Write-Output "`n"
