@@ -46,6 +46,7 @@ $RegionNames = (aws ec2 describe-regions | ConvertFrom-Json).Regions.RegionName 
 Write-Output "List of ARNs missing secrets in Secrets Manager in account $($AccountID) with profile name $($ProfileName):"
 Write-Output "`n"
 
+# ARNs must match pattern: ^\!?[a-zA-Z0-9 :_@\/\+\=\.\-]*$]
 foreach ($Region in $RegionNames) {
     $EC2Instances = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-instances | ConvertFrom-Json
     $EC2KeyPairARNs = @()
@@ -65,7 +66,7 @@ foreach ($Region in $RegionNames) {
                 }
                 if ($Instance.KeyName) {
                     if (-Not($EC2KeyPairARNs.Contains("arn:aws:ec2:$($Region):$($AccountID):key-pair/$($Instance.KeyName)"))) {
-                        $EC2KeyPairARNs += "arn:aws:ec2:$($Region):$($AccountID):key-pair/$($Instance.KeyName)"
+                        $EC2KeyPairARNs += "arn:aws:ec2:$($Region):$($AccountID):key-pair/$($Instance.KeyName)" -replace '[^a-zA-Z0-9 :_@\/\+\=\.\-]', ''
                     }
                 }
             }
@@ -75,7 +76,7 @@ foreach ($Region in $RegionNames) {
     foreach ($EC2ASG in $EC2ASGs.AutoScalingGroups) {
         if ($EC2ASG.AutoScalingGroupARN) {
             if (-Not($EC2ASGARNs.Contains($EC2ASG.AutoScalingGroupARN))) {
-                $EC2ASGARNs += $EC2ASG.AutoScalingGroupARN
+                $EC2ASGARNs += $EC2ASG.AutoScalingGroupARN -replace '[^a-zA-Z0-9 :_@\/\+\=\.\-]', ''
             }
         }
     }
@@ -102,12 +103,17 @@ foreach ($Region in $RegionNames) {
     $AllARNs += $EC2ASGARNs
     $AllARNs += $RDSDatabaseClusterARNs
     $AllARNs += $RDSDatabaseInstanceARNs
+    $SecretARNs = @()
+    $ARNSearch = ($AllARNs -join ",")
+    $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARNSearch)" | ConvertFrom-Json
+    foreach ($Secret in $SecretList) {
+        if ($Secret.ARN) {
+            $SecretARNs += $Secret.ARN
+        }
+    }
     if (-Not($AllARNs.Length -eq 0)) {
         foreach ($ARN in $AllARNs) {
-            $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARN)" | ConvertFrom-Json
-            if (-Not($SecretList.SecretList)) {
-                Write-Output $ARN
-            } elseif (-Not($SecretList.SecretList[0].ARN)) {
+            if (-Not($SecretARNs.Contains($ARN))) {
                 Write-Output $ARN
             }
         }

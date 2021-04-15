@@ -154,13 +154,15 @@ $SecretUpdateChoices.Add((New-Object Management.Automation.Host.ChoiceDescriptio
 
 $SecretStringObject = [PSCustomObject]@{}
 
+$InternalARN = $ARN -replace '[^a-zA-Z0-9 :_@\/\+\=\.\-]', ''
+
 switch ($Type) {
     "EC2Instance" {
-        if ($ARN -eq "") {
+        if ($InternalARN -eq "") {
             Write-Error "The ARN cannot be empty for an EC2 Instance."
             Return $false
         }
-        $EC2InstanceID = $ARN -replace '^.*\/'
+        $EC2InstanceID = $InternalARN -replace '^.*\/'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-instances --instance-ids "$($EC2InstanceID)" | ConvertFrom-Json
         if ($Response.Reservations.Count -eq 0) {
             Write-Error "The instance was not found using this region and profile name."
@@ -220,11 +222,11 @@ switch ($Type) {
         Break
     }
     "EC2ASG" {
-        if ($ARN -eq "") {
+        if ($InternalARN -eq "") {
             Write-Error "The ARN cannot be empty for an EC2 Auto Scaling Group."
             Return $false
         }
-        $EC2ASGName = $ARN -replace '^.*\/'
+        $EC2ASGName = $InternalARN -replace '^.*\/'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" autoscaling describe-auto-scaling-groups --auto-scaling-group-names "$($EC2ASGName)" | ConvertFrom-Json
         If (-Not($Response.AutoScalingGroups[0].AutoScalingGroupName -eq $EC2ASGName)) {
             Write-Error "The Auto Scaling Group was not found using this region and profile name."
@@ -296,11 +298,11 @@ switch ($Type) {
         Break
     }
     "EC2KeyPair" {
-        if ($ARN -eq "") {
+        if ($InternalARN -eq "") {
             Write-Error "The ARN cannot be empty for an EC2 Key Pair."
             Return $false
         }
-        $EC2KeyPairName = $ARN -replace '^.*\/'
+        $EC2KeyPairName = $InternalARN -replace '^.*\/'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-key-pairs --key-name "$($EC2KeyPairName)" | ConvertFrom-Json
         if (-Not($Response.KeyPairs.KeyName -eq $EC2KeyPairName)) {
             Write-Error "The EC2 Key Pair was not found using this region and profile name."
@@ -354,11 +356,11 @@ switch ($Type) {
         Break
     }
     "RDSCluster" {
-        if ($ARN -eq "") {
+        if ($InternalARN -eq "") {
             Write-Error "The ARN cannot be empty for an RDS Cluster."
             Return $false
         }
-        $RDSClusterName = $ARN -replace '^.*\:'
+        $RDSClusterName = $InternalARN -replace '^.*\:'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-clusters --db-cluster-identifier "$($RDSClusterName)" | ConvertFrom-Json
         if (-Not($Response.DBClusters.DBClusterIdentifier -eq $RDSClusterName)) {
             Write-Error "The RDS database was not found using this region and profile name."
@@ -421,11 +423,11 @@ switch ($Type) {
         Break
     }
     "RDSInstance" {
-        if ($ARN -eq "") {
+        if ($InternalARN -eq "") {
             Write-Error "The ARN cannot be empty for an RDS Instance."
             Return $false
         }
-        $RDSInstanceName = $ARN -replace '^.*\:'
+        $RDSInstanceName = $InternalARN -replace '^.*\:'
         $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-instances --db-instance-identifier "$($RDSInstanceName)" | ConvertFrom-Json
         if (-Not($Response.DBInstances.DBInstanceIdentifier -eq $RDSInstanceName)) {
             Write-Error "The RDS database was not found using this region and profile name."
@@ -488,7 +490,7 @@ switch ($Type) {
         Break
     }
     "OnPremiseDatabase" {
-        if (-Not($ARN -eq "")) {
+        if (-Not($InternalARN -eq "")) {
             Write-Warning "The ARN is not used for an on-premise database."
             Return $false
         }
@@ -567,9 +569,9 @@ Write-Output $SecretString
 
 if ($SecretExists) {
     $SecretUpdate = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager update-secret --secret-id "$($SecretName)" --description "$($Description)" --secret-string '$($SecretString)' | ConvertFrom-Json
-    aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager tag-resource --secret-id "$($SecretName)" --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($ARN)" Key="Environment",Value="$($Environment)"
+    aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager tag-resource --secret-id "$($SecretName)" --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($InternalARN)" Key="Environment",Value="$($Environment)"
     Return "Updated the secret named `"$($SecretUpdate.Name)`"."
 } else {
-    $SecretCreation = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager create-secret --name "$($SecretName)" --client-request-token "$([guid]::NewGuid())" --description "$($Description)" --secret-string '$($SecretString)' --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($ARN)" Key="Environment",Value="$($Environment)" | ConvertFrom-Json
+    $SecretCreation = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager create-secret --name "$($SecretName)" --client-request-token "$([guid]::NewGuid())" --description "$($Description)" --secret-string '$($SecretString)' --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($InternalARN)" Key="Environment",Value="$($Environment)" | ConvertFrom-Json
     Return "Created a secret named `"$($SecretCreation.Name)`"."
 }
