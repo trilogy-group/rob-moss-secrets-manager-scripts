@@ -32,6 +32,10 @@ param (
 )
 
 $Response = aws --profile "$($ProfileName)" sts get-caller-identity | ConvertFrom-Json
+if (-Not($Response.Account)) {
+    Write-Error -Message "Could not role switch into this AWS account."
+    Return $false
+}
 if (-Not($Response.Account -eq $AccountID)) {
     Write-Error -Message "The specified account ID does not match the AWS CLI profile in use."
     Return $false
@@ -39,64 +43,72 @@ if (-Not($Response.Account -eq $AccountID)) {
 
 $RegionNames = (aws ec2 describe-regions | ConvertFrom-Json).Regions.RegionName | Sort-Object
 
-# arn:aws:ec2:us-east-1:012345678901:instance/i-0123456789abcdef0
-# arn:aws:autoscaling:us-east-1:012345678901:autoScalingGroup:01234567-89ab-cdef-0123-456789abcdef:autoScalingGroupName/example-autoscaling-group
-# arn:aws:ec2:us-east-1:012345678901:key-pair/example-key-pair
-# arn:aws:rds:us-east-1:012345678901:cluster:example-db-cluster
-# arn:aws:rds:us-east-1:012345678901:instance:example-db-instance
-
 Write-Output "List of ARNs missing secrets in Secrets Manager:"
 Write-Output "`r`n"
 
 foreach ($Region in $RegionNames) {
-    $EC2KeyPairs = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-key-pairs | ConvertFrom-Json
-    foreach ($EC2KeyPair in $EC2KeyPairs.KeyPairs) {
-        $ARN = "arn:aws:ec2:$($Region):$($AccountID):key-pair/$($EC2KeyPair.KeyName)"
-        $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARN)" | ConvertFrom-Json
-        if (-Not($SecretList.SecretList[0].ARN)) {
-            Write-Output $ARN
-        }
-    }
-}
-foreach ($Region in $RegionNames) {
     $EC2Instances = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-instances | ConvertFrom-Json
+    $EC2KeyPairARNs = @()
+    $EC2InstanceARNs = @()
+    $EC2ASGARNs = @()
+    $RDSDatabaseClusterARNs = @()
+    $RDSDatabaseInstanceARNs = @()
+    $AllARNs = @()
     foreach ($Reservation in $EC2Instances.Reservations) {
         if (-Not($Reservation.RequesterID -eq "940372691376")) {
             foreach ($Instance in $Reservation.Instances) {
                 $ARN = "arn:aws:ec2:$($Region):$($AccountID):instance/$($Instance.InstanceId)"
-                $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARN)" | ConvertFrom-Json
-                if (-Not($SecretList.SecretList[0].ARN)) {
-                    Write-Output $ARN
+                if ($Instance.InstanceId) {
+                    if (-Not($EC2InstanceARNs.Contains($ARN))) {
+                        $EC2InstanceARNs += $ARN
+                    }
+                }
+                if ($Instance.KeyName) {
+                    if (-Not($EC2KeyPairARNs.Contains("arn:aws:ec2:$($Region):$($AccountID):key-pair/$($Instance.KeyName)"))) {
+                        $EC2KeyPairARNs += "arn:aws:ec2:$($Region):$($AccountID):key-pair/$($Instance.KeyName)"
+                    }
                 }
             }
         }
     }
-}
-foreach ($Region in $RegionNames) {
     $EC2ASGs = aws --region "$($Region)" --profile "$($ProfileName)" autoscaling describe-auto-scaling-groups | ConvertFrom-Json
     foreach ($EC2ASG in $EC2ASGs.AutoScalingGroups) {
-        $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($EC2ASG.AutoScalingGroupARN)" | ConvertFrom-Json
-        if (-Not($SecretList.SecretList[0].ARN)) {
-            Write-Output $EC2ASG.AutoScalingGroupARN
+        if ($EC2ASG.AutoScalingGroupARN) {
+            if (-Not($EC2ASGARNs.Contains($EC2ASG.AutoScalingGroupARN))) {
+                $EC2ASGARNs += $EC2ASG.AutoScalingGroupARN
+            }
         }
     }
-}
-foreach ($Region in $RegionNames) {
     $RDSDatabaseClusters = $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-clusters | ConvertFrom-Json
     foreach ($RDSDatabaseCluster in $RDSDatabaseClusters.DBClusters) {
-        $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($RDSDatabaseCluster.DBClusterArn)" | ConvertFrom-Json
-        if (-Not($SecretList.SecretList[0].ARN)) {
-            Write-Output $RDSDatabaseCluster.DBClusterArn
+        if ($RDSDatabaseCluster.DBClusterARN) {
+            if (-Not($RDSDatabaseClusterARNs.Contains($RDSDatabaseCluster.DBClusterARN))) {
+                $RDSDatabaseClusterARNs += $RDSDatabaseCluster.DBClusterARN
+            }
         }
     }
-}
-foreach ($Region in $RegionNames) {
     $RDSDatabaseInstances = $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-instances | ConvertFrom-Json
     foreach ($RDSDatabaseInstance in $RDSDatabaseInstances.DBInstances) {
         if (-Not($RDSDatabaseInstance.DBClusterIdentifier)) {
-            $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($RDSDatabaseInstance.DBInstanceArn)" | ConvertFrom-Json
-            if (-Not($SecretList.SecretList[0].ARN)) {
-                Write-Output $RDSDatabaseInstance.DBInstanceArn
+            if ($RDSDatabaseInstance.DBInstanceArn) {
+                if (-Not($RDSDatabaseInstanceARNs.Contains($RDSDatabaseInstance.DBInstanceArn))) {
+                    $RDSDatabaseInstanceARNs += $RDSDatabaseInstance.DBInstanceArn
+                }
+            }
+        }
+    }
+    $AllARNs += $EC2KeyPairARNs
+    $AllARNs += $EC2InstanceARNs
+    $AllARNs += $EC2ASGARNs
+    $AllARNs += $RDSDatabaseClusterARNs
+    $AllARNs += $RDSDatabaseInstanceARNs
+    if (-Not($AllARNs.Length -eq 0)) {
+        foreach ($ARN in $AllARNs) {
+            $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARN)" | ConvertFrom-Json
+            if (-Not($SecretList.SecretList)) {
+                Write-Output $ARN
+            } elseif (-Not($SecretList.SecretList[0].ARN)) {
+                Write-Output $ARN
             }
         }
     }
