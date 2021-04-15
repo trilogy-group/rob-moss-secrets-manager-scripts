@@ -243,7 +243,7 @@ switch ($Type) {
                 $EC2KeyPairName = $LaunchTemplateResponse.LaunchTemplateVersions[0].LaunchTemplateData.KeyName
             }
             if (-Not($EC2KeyPairName)) {
-                Write-Error "Could not find the EC2 Key Pair associated with the Auto Scaling Group."
+                Write-Error "Could not find the EC2 Key Pair associated with the Auto Scaling Group. You must supply a password or a private key."
                 Return $false
             } else {
                 $EC2KeyPairSecretName = "$($SecretNamePrefix)$($EC2KeyPairName)"
@@ -364,29 +364,24 @@ switch ($Type) {
             Write-Error "The RDS database was not found using this region and profile name."
             Return $false
         }
-        if ($Username -eq "") {
-            Write-Error "A username is required for an RDS Cluster."
-            Return $false
+        if (-Not($Username -eq "")) {
+            Write-Warning "The username is automatically populated for an RDS Cluster."
         }
         if ($Password -eq "") {
             Write-Error "A password is required for an RDS Cluster."
             Return $false
         }
-        if ($Engine -eq "") {
-            Write-Error "The database engine is required for an RDS Cluster."
-            Return $false
+        if (-Not($Engine -eq "")) {
+            Write-Warning "The database engine is automatically determined for an RDS Cluster."
         }
-        if ($DBHost -eq "") {
-            Write-Error "The database host is required for an RDS Cluster."
-            Return $false
+        if (-Not($DBHost -eq "")) {
+            Write-Warning "The database host is automatically determined for an RDS Cluster."
         }
-        if ($DBPort -eq "") {
-            Write-Error "The database port is required for an RDS Cluster."
-            Return $false
+        if (-Not($DBPort -eq "")) {
+            Write-Warning "The database port is automatically determined for an RDS Cluster."
         }
-        if ($DBName -eq "") {
-            Write-Error "The database name is required for an RDS Cluster."
-            Return $false
+        if (-Not($DBName -eq "")) {
+            Write-Warning "The database name is automatically determined for an RDS Cluster."
         }
         if (-Not($PrivateKey -eq "")) {
             Write-Warning "The private key is ignored for an RDS Cluster."
@@ -404,12 +399,22 @@ switch ($Type) {
             Write-Warning "The escalation password is ignored for an RDS Cluster."
         }
         $SecretName = "$($SecretNamePrefix)$($Response.DBClusters.DBClusterIdentifier)"
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
+        if ($Response.DBClusters[0].MasterUsername) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Response.DBClusters[0].MasterUsername
+        }
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'host' -Value $DBHost
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'port' -Value $DBPort
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'dbname' -Value $DBName
+        if ($Response.DBClusters[0].Engine) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Response.DBClusters[0].Engine
+        }
+        if ($Response.DBClusters[0].Endpoint) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'host' -Value $Response.DBClusters[0].Endpoint
+        }
+        if ($Response.DBClusters[0].Port) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'port' -Value $Response.DBClusters[0].Port
+        }
+        if ($Response.DBClusters[0].DatabaseName) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'dbname' -Value $Response.DBClusters[0].DatabaseName
+        }
         if (-Not($Notes -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
@@ -426,29 +431,24 @@ switch ($Type) {
             Write-Error "The RDS database was not found using this region and profile name."
             Return $false
         }
-        if ($Username -eq "") {
-            Write-Error "A username is required for an RDS Instance."
-            Return $false
+        if (-Not($Username -eq "")) {
+            Write-Warning "The username is automatically populated for an RDS Instance."
         }
         if ($Password -eq "") {
             Write-Error "A password is required for an RDS Instance."
             Return $false
         }
-        if ($Engine -eq "") {
-            Write-Error "The database engine is required for an RDS Instance."
-            Return $false
+        if (-Not($Engine -eq "")) {
+            Write-Warning "The database engine is automatically determined for an RDS Instance."
         }
-        if ($DBHost -eq "") {
-            Write-Error "The database host is required for an RDS Instance."
-            Return $false
+        if (-Not($DBHost -eq "")) {
+            Write-Warning "The database host is automatically determined for an RDS Instance."
         }
-        if ($DBPort -eq "") {
-            Write-Error "The database port is required for an RDS Instance."
-            Return $false
+        if (-Not($DBPort -eq "")) {
+            Write-Warning "The database port is automatically determined for an RDS Instance."
         }
-        if ($DBName -eq "") {
-            Write-Error "The database name is required for an RDS Instance."
-            Return $false
+        if (-Not($DBName -eq "")) {
+            Write-Warning "The database name is automatically determined for an RDS Instance."
         }
         if (-Not($PrivateKey -eq "")) {
             Write-Warning "The private key is ignored for an RDS Instance."
@@ -466,12 +466,22 @@ switch ($Type) {
             Write-Warning "The escalation password is ignored for an RDS Instance."
         }
         $SecretName = "$($SecretNamePrefix)$($Response.DBInstances.DBInstanceIdentifier)"
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
+        if ($Response.DBInstances[0].MasterUsername) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Response.DBInstances[0].MasterUsername
+        }
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'host' -Value $DBHost
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'port' -Value $DBPort
-        $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'dbname' -Value $DBName
+        if ($Response.DBInstances[0].Engine) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Response.DBInstances[0].Engine
+        }
+        if ($Response.DBInstances[0].Endpoint.Address) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'host' -Value $Response.DBInstances[0].Endpoint.Address
+        }
+        if ($Response.DBInstances[0].Endpoint.Port) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'port' -Value $Response.DBInstances[0].Endpoint.Port
+        }
+        if ($Response.DBInstances[0].DBName) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'dbname' -Value $Response.DBInstances[0].DBName
+        }
         if (-Not($Notes -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
