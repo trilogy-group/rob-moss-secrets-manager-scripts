@@ -169,7 +169,7 @@ switch ($Type) {
             Return $false
         }
         if ($Password -eq "" -and $PrivateKey -eq "") {
-            $EC2KeyPairSecretName = "escwm-$($Response.Reservations[0].Instances[0].KeyName)"
+            $EC2KeyPairSecretName = "eswcm-$($Response.Reservations[0].Instances[0].KeyName)"
             $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager describe-secret --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
             if (-Not($SecretsManagerResponse.Name -eq $EC2KeyPairSecretName)) {
                 Write-Error "You must maintain the secret for the EC2 Key Pair to maintain a secret for an EC2 instance without a password or private key."
