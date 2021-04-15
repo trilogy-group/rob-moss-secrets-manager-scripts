@@ -143,6 +143,8 @@ if (-Not($Response.Account -eq $AccountID)) {
     Return $false
 }
 
+$SecretNamePrefix = "eswcm-"
+
 $SecretUpdateTitle    = 'A secret for this entity already exists'
 $SecretUpdateQuestion = 'Are you sure you want to update the secret?'
 
@@ -169,7 +171,7 @@ switch ($Type) {
             Return $false
         }
         if ($Password -eq "" -and $PrivateKey -eq "") {
-            $EC2KeyPairSecretName = "eswcm-$($Response.Reservations[0].Instances[0].KeyName)"
+            $EC2KeyPairSecretName = "$($SecretNamePrefix)$($Response.Reservations[0].Instances[0].KeyName)"
             $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager describe-secret --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
             if (-Not($SecretsManagerResponse.Name -eq $EC2KeyPairSecretName)) {
                 Write-Error "You must maintain the secret for the EC2 Key Pair to maintain a secret for an EC2 instance without a password or private key."
@@ -192,7 +194,7 @@ switch ($Type) {
             Write-Error "You must supply the password for a password-protected private key."
             Return $False
         }
-        $SecretName = "eswcm-$($Response.Reservations[0].Instances[0].InstanceId)"
+        $SecretName = "$($SecretNamePrefix)$($Response.Reservations[0].Instances[0].InstanceId)"
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         if (-Not($Password -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
@@ -244,7 +246,7 @@ switch ($Type) {
                 Write-Error "Could not find the EC2 Key Pair associated with the Auto Scaling Group."
                 Return $false
             } else {
-                $EC2KeyPairSecretName = "eswcm-$($EC2KeyPairName)"
+                $EC2KeyPairSecretName = "$($SecretNamePrefix)$($EC2KeyPairName)"
                 $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager describe-secret --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
                 if (-Not($SecretsManagerResponse.Name -eq $EC2KeyPairSecretName)) {
                     Write-Error "You must maintain the secret for the EC2 Key Pair to maintain a secret for an EC2 Auto Scaling Group without a password or private key."
@@ -268,7 +270,7 @@ switch ($Type) {
             Write-Error "You must supply the password for a password-protected private key."
             Return $False
         }
-        $SecretName = "eswcm-$($Response.AutoScalingGroups[0].AutoScalingGroupName)"
+        $SecretName = "$($SecretNamePrefix)$($Response.AutoScalingGroups[0].AutoScalingGroupName)"
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         if (-Not($Password -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
@@ -330,7 +332,7 @@ switch ($Type) {
             Write-Error "You must supply the password for a password-protected private key."
             Return $False
         }
-        $SecretName = "eswcm-$($Response.KeyPairs.KeyName)"
+        $SecretName = "$($SecretNamePrefix)$($Response.KeyPairs.KeyName)"
         if (-Not($PrivateKey -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekey' -Value $PrivateKey
         }
@@ -401,7 +403,7 @@ switch ($Type) {
         if (-Not($EscalationPassword -eq "")) {
             Write-Warning "The escalation password is ignored for an RDS Cluster."
         }
-        $SecretName = "eswcm-$($Response.DBClusters.DBClusterIdentifier)"
+        $SecretName = "$($SecretNamePrefix)$($Response.DBClusters.DBClusterIdentifier)"
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
@@ -463,7 +465,7 @@ switch ($Type) {
         if (-Not($EscalationPassword -eq "")) {
             Write-Warning "The escalation password is ignored for an RDS Instance."
         }
-        $SecretName = "eswcm-$($Response.DBInstances.DBInstanceIdentifier)"
+        $SecretName = "$($SecretNamePrefix)$($Response.DBInstances.DBInstanceIdentifier)"
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
@@ -520,7 +522,7 @@ switch ($Type) {
             Write-Warning "The escalation password is ignored for an on-premise database."
         }
         Write-Warning "There is no resource validation performed for an on-premise database."
-        $SecretName = "eswcm-$($DBName)"
+        $SecretName = "$($SecretNamePrefix)$($DBName)"
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
