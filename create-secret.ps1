@@ -18,7 +18,7 @@
 
   .PARAMETER ARN Must be valid. Mandatory, except for OnPremiseDatabases.
 
-  .PARAMETER Environment Production, Staging, QA, or Development.
+  .PARAMETER Environment Prod, PS, Dev, Testing, Staging, Mixed, or NonProd.
 
   .PARAMETER Username Required for EC2 Instance, EC2 ASG, RDSCluster, RDSInstance, and OnPremiseDatabase. Ignored for EC2 Key Pairs.
 
@@ -51,22 +51,22 @@
   System.String. This script outputs the Secrets Manager secret ID.
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2Instance" -Description "My EC2 Instance" -ARN "arn:aws:ec2:us-east-1:012345678901:instance/i-0123456789abcdef0" -Environment "prod" -Username "ec2-user"
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2Instance" -Description "My EC2 Instance" -ARN "arn:aws:ec2:us-east-1:012345678901:instance/i-0123456789abcdef0" -Environment "Prod" -Username "ec2-user"
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2ASG" -Description "My EC2 Auto-Scaling Group" -ARN "arn:aws:autoscaling:us-east-1:012345678901:autoScalingGroup:01234567-890a-1234-5678-9abcdef01234:autoScalingGroupName/my-ec2-asg" -Environment "staging" -Username "Administrator" -Password 'rE0qU0uY2mY8mM6k'
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2ASG" -Description "My EC2 Auto-Scaling Group" -ARN "arn:aws:autoscaling:us-east-1:012345678901:autoScalingGroup:01234567-890a-1234-5678-9abcdef01234:autoScalingGroupName/my-ec2-asg" -Environment "Staging" -Username "Administrator" -Password 'rE0qU0uY2mY8mM6k'
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2KeyPair" -Description "My EC2 Key Pair" -ARN "arn:aws:ec2:us-east-1:162174280605:key-pair/my-ec2-key-pair" -Environment "qa" -PrivateKey "-----BEGIN RSA PRIVATE KEY-----\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000=\n-----END RSA PRIVATE KEY-----"
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "EC2KeyPair" -Description "My EC2 Key Pair" -ARN "arn:aws:ec2:us-east-1:162174280605:key-pair/my-ec2-key-pair" -Environment "PS" -PrivateKey "-----BEGIN RSA PRIVATE KEY-----\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000000000000\n0000000000000000000000000000000000000000000000000000000000000000000=\n-----END RSA PRIVATE KEY-----"
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "RDSCluster" -Description "My RDS Cluster" -ARN "arn:aws:rds:us-east-1:012345678901:cluster:my-rds-cluster" -Environment "dev" -Username "admin" -Password 'xY2kU1kA4vB3lQ4e' -Engine "mysql" -DBHost "my-rds-clustercluster.cluster-012345678901.us-east-1.rds.amazonaws.com" -DBPort 3306 -DBName "mydatabase"
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "RDSCluster" -Description "My RDS Cluster" -ARN "arn:aws:rds:us-east-1:012345678901:cluster:my-rds-cluster" -Environment "Dev" -Username "admin" -Password 'xY2kU1kA4vB3lQ4e' -Engine "mysql" -DBHost "my-rds-clustercluster.cluster-012345678901.us-east-1.rds.amazonaws.com" -DBPort 3306 -DBName "mydatabase"
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "RDSInstance" -Description "My RDS Instance" -ARN "arn:aws:rds:us-east-1:012345678901:db:my-rds-instance" -Environment "prod" -Username "admin" -Password 'gG7fY7cY8hZ9gU9y' -Engine "oracle" -DBHost "my-rds-instance.012345678901.us-east-1.rds.amazonaws.com" -DBPort 1521 -DBName "mydatabase"
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "RDSInstance" -Description "My RDS Instance" -ARN "arn:aws:rds:us-east-1:012345678901:db:my-rds-instance" -Environment "Mixed" -Username "admin" -Password 'gG7fY7cY8hZ9gU9y' -Engine "oracle" -DBHost "my-rds-instance.012345678901.us-east-1.rds.amazonaws.com" -DBPort 1521 -DBName "mydatabase"
 
   .EXAMPLE
-  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "OnPremiseDatabase" -Description "My on-premise database" -Environment "prod" -Username "admin" -Password 'lV3zY1mZ3hA7kP0a' -Engine "sqlserver" -DBHost "10.13.16.19" -DBPort 1433 -DBName "mydatabase"
+  PS> .\create-secret.ps1 -Region "us-east-1" -AccountID 012345678901 -ProfileName "default" -Type "OnPremiseDatabase" -Description "My on-premise database" -Environment "NonProd" -Username "admin" -Password 'lV3zY1mZ3hA7kP0a' -Engine "sqlserver" -DBHost "10.13.16.19" -DBPort 1433 -DBName "mydatabase"
 #>
 
 param (
@@ -93,7 +93,7 @@ param (
     [String]
     $ARN,
     [Parameter(Mandatory = $true)]
-    [ValidateSet("prod", "staging", "qa", "dev")]
+    [ValidateSet("Prod", "PS", "Dev", "Testing", "Staging", "Mixed", "NonProd")]
     [String]
     $Environment,
     [Parameter(Mandatory = $false)]
@@ -550,13 +550,14 @@ if ($Response.Name -eq $SecretName) {
 
 $SecretString = ConvertTo-Json $SecretStringObject
 
+Write-Output "Using the following JSON for the Secrets Manager secret value:"
 Write-Output $SecretString
 
 if ($SecretExists) {
     $SecretUpdate = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager update-secret --secret-id "$($SecretName)" --description "$($Description)" --secret-string '$($SecretString)' | ConvertFrom-Json
     aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager tag-resource --secret-id "$($SecretName)" --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($ARN)" Key="Environment",Value="$($Environment)"
-    Return $SecretUpdate.Name
+    Return "Updated the secret named `"$($SecretUpdate.Name)`"."
 } else {
     $SecretCreation = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager create-secret --name "$($SecretName)" --client-request-token "$([guid]::NewGuid())" --description "$($Description)" --secret-string '$($SecretString)' --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($ARN)" Key="Environment",Value="$($Environment)" | ConvertFrom-Json
-    Return $SecretCreation.Name
+    Return "Created a secret named `"$($SecretCreation.Name)`"."
 }
