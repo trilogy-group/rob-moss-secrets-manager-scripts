@@ -44,6 +44,8 @@
 
   .PARAMETER Notes Any sensitive information you wish to store with the secret.
 
+  .PARAMETER Force Force updates to secrets that already exist.
+
   .INPUTS
   None. You cannot pipe objects to this script.
 
@@ -134,7 +136,10 @@ param (
     $EscalationPassword,
     [Parameter(Mandatory = $false)]
     [String]
-    $Notes
+    $Notes,
+    [Parameter(Mandatory = $false)]
+    [Bool]
+    $Force = $false
 )
 
 $Response = aws --region "$($Region)" --profile "$($ProfileName)" sts get-caller-identity | ConvertFrom-Json
@@ -551,12 +556,14 @@ switch ($Type) {
 $Response = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager describe-secret --secret-id "$($SecretName)" | ConvertFrom-Json
 if ($Response.Name -eq $SecretName) {
     $SecretExists = $true
-    $SecretUpdateDecision = $Host.UI.PromptForChoice($SecretUpdateTitle, $SecretUpdateQuestion, $SecretUpdateChoices, 1)
-    if ($SecretUpdateDecision -eq 0) {
-        Write-Output 'The secret value will be updated.'
-    } else {
-        Write-Output 'The secret value will not be updated.'
-        Return $false
+    if ($Force -eq $false) {
+        $SecretUpdateDecision = $Host.UI.PromptForChoice($SecretUpdateTitle, $SecretUpdateQuestion, $SecretUpdateChoices, 1)
+        if ($SecretUpdateDecision -eq 0) {
+            Write-Output 'The secret value will be updated.'
+        } else {
+            Write-Output 'The secret value will not be updated.'
+            Return $false
+        }
     }
 } else {
     $SecretExists = $false
