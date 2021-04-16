@@ -41,14 +41,11 @@ if (-Not($Response.Account -eq $AccountID)) {
     Return $false
 }
 
-$RegionNames = (aws ec2 describe-regions | ConvertFrom-Json).Regions.RegionName | Sort-Object
-
 Write-Output "List of ARNs missing secrets in Secrets Manager in account $($AccountID) with profile name $($ProfileName):"
 Write-Output "`n"
 
-# ARNs must match pattern: ^\!?[a-zA-Z0-9 :_@\/\+\=\.\-]*$]
-foreach ($Region in $RegionNames) {
-    $EC2Instances = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-instances | ConvertFrom-Json
+(aws ec2 describe-regions | ConvertFrom-Json).Regions.RegionName | ForEach-Object -Parallel {
+    $EC2Instances = aws --region $_ --profile "$($using:ProfileName)" ec2 describe-instances | ConvertFrom-Json
     $EC2KeyPairARNs = @()
     $EC2InstanceARNs = @()
     $EC2ASGARNs = @()
@@ -58,21 +55,21 @@ foreach ($Region in $RegionNames) {
     foreach ($Reservation in $EC2Instances.Reservations) {
         if (-Not($Reservation.RequesterID -eq "940372691376")) {
             foreach ($Instance in $Reservation.Instances) {
-                $ARN = "arn:aws:ec2:$($Region):$($AccountID):instance/$($Instance.InstanceId)"
+                $ARN = "arn:aws:ec2:$($_):$($using:AccountID):instance/$($Instance.InstanceId)"
                 if ($Instance.InstanceId) {
                     if (-Not($EC2InstanceARNs.Contains($ARN))) {
                         $EC2InstanceARNs += $ARN
                     }
                 }
                 if ($Instance.KeyName) {
-                    if (-Not($EC2KeyPairARNs.Contains("arn:aws:ec2:$($Region):$($AccountID):key-pair/$($Instance.KeyName)"))) {
-                        $EC2KeyPairARNs += "arn:aws:ec2:$($Region):$($AccountID):key-pair/$($Instance.KeyName)" -replace '[^a-zA-Z0-9 :_@\/\+\=\.\-]', ''
+                    if (-Not($EC2KeyPairARNs.Contains("arn:aws:ec2:$($_):$($using:AccountID):key-pair/$($Instance.KeyName)"))) {
+                        $EC2KeyPairARNs += "arn:aws:ec2:$($_):$($using:AccountID):key-pair/$($Instance.KeyName)" -replace '[^a-zA-Z0-9 :_@\/\+\=\.\-]', ''
                     }
                 }
             }
         }
     }
-    $EC2ASGs = aws --region "$($Region)" --profile "$($ProfileName)" autoscaling describe-auto-scaling-groups | ConvertFrom-Json
+    $EC2ASGs = aws --region $_ --profile "$($using:ProfileName)" autoscaling describe-auto-scaling-groups | ConvertFrom-Json
     foreach ($EC2ASG in $EC2ASGs.AutoScalingGroups) {
         if ($EC2ASG.AutoScalingGroupARN) {
             if (-Not($EC2ASGARNs.Contains($EC2ASG.AutoScalingGroupARN))) {
@@ -80,7 +77,7 @@ foreach ($Region in $RegionNames) {
             }
         }
     }
-    $RDSDatabaseClusters = $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-clusters | ConvertFrom-Json
+    $RDSDatabaseClusters = aws --region $_ --profile "$($using:ProfileName)" rds describe-db-clusters | ConvertFrom-Json
     foreach ($RDSDatabaseCluster in $RDSDatabaseClusters.DBClusters) {
         if ($RDSDatabaseCluster.DBClusterARN) {
             if (-Not($RDSDatabaseClusterARNs.Contains($RDSDatabaseCluster.DBClusterARN))) {
@@ -88,7 +85,7 @@ foreach ($Region in $RegionNames) {
             }
         }
     }
-    $RDSDatabaseInstances = $Response = aws --region "$($Region)" --profile "$($ProfileName)" rds describe-db-instances | ConvertFrom-Json
+    $RDSDatabaseInstances = aws --region $_ --profile "$($using:ProfileName)" rds describe-db-instances | ConvertFrom-Json
     foreach ($RDSDatabaseInstance in $RDSDatabaseInstances.DBInstances) {
         if (-Not($RDSDatabaseInstance.DBClusterIdentifier)) {
             if ($RDSDatabaseInstance.DBInstanceArn) {
@@ -103,21 +100,30 @@ foreach ($Region in $RegionNames) {
     $AllARNs += $EC2ASGARNs
     $AllARNs += $RDSDatabaseClusterARNs
     $AllARNs += $RDSDatabaseInstanceARNs
-    $SecretARNs = @()
-    $ARNSearch = ($AllARNs -join ",")
-    $SecretList = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARNSearch)" | ConvertFrom-Json
-    foreach ($Secret in $SecretList) {
-        if ($Secret.ARN) {
-            $SecretARNs += $Secret.ARN
-        }
-    }
-    if (-Not($AllARNs.Length -eq 0)) {
-        foreach ($ARN in $AllARNs) {
-            if (-Not($SecretARNs.Contains($ARN))) {
-                Write-Output $ARN
+    $GroupSize = 9
+    $Iterator = 0
+    do {
+        $AllARNsSubGroup = $AllARNs[$Iterator..(($Iterator += $GroupSize) -1)]
+        $ARNSearch = ($AllARNsSubGroup -join ",")
+        $SecretARNs = @()
+        $SecretList = aws --region $_ --profile "$($using:ProfileName)" secretsmanager list-secrets --filters "Key=tag-key,Values=ARN" "Key=tag-value,Values=$($ARNSearch)" | ConvertFrom-Json
+        foreach ($Secret in $SecretList.SecretList) {
+            foreach ($Tag in $Secret.Tags) {
+                if ($Tag.Key -eq "ARN") {
+                    $SecretARNs += $Tag.Value
+                }
             }
         }
-    }
-}
+        if (-Not($AllARNsSubGroup.Length -eq 0)) {
+            foreach ($ARN in $AllARNsSubGroup) {
+                if (-Not($SecretARNs.Contains($ARN))) {
+                    Write-Warning "Secret missing for $($ARN)"
+                } else {
+                    Write-Output "Secret already created for $($ARN)"
+                }
+            }
+        }
+    } until ($Iterator -ge $AllARNs.Count)
+}  -ThrottleLimit 100
 
 Write-Output "`n"
