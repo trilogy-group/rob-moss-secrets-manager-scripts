@@ -184,6 +184,9 @@ switch ($Type) {
             Write-Error "A username is required for an EC2 instance."
             Return $false
         }
+        if (-Not($SecretType -eq "")) {
+            Write-Warning "The SecretType is automatically determined for EC2 Key Pairs."
+        }
         if ($Response.Reservations[0].Instances[0].Platform -eq "windows") {
             $SecretType = "WinRM"
         } else {
