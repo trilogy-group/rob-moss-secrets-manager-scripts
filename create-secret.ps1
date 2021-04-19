@@ -1,3 +1,4 @@
+#Requires -Version 7.1.3
 <#
   .SYNOPSIS
   Creates or updates a secret in Secrets Manager for EC2 Instances, EC2 Auto-Scaling Groups, EC2 Key Pairs, RDS databases or on-premise databases.
