@@ -185,9 +185,9 @@ switch ($Type) {
             Return $false
         }
         if ($Response.Reservations[0].Instances[0].Platform -eq "windows") {
-            $SecretType = "SSH"
-        } else {
             $SecretType = "WinRM"
+        } else {
+            $SecretType = "SSH"
         }
         if ($Password -eq "" -and $PrivateKey -eq "") {
             $EC2KeyPairSecretName = "$($SecretNamePrefix)$($Response.Reservations[0].Instances[0].KeyName)"
