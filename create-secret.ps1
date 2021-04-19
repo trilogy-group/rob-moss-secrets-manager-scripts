@@ -14,6 +14,8 @@
 
   .PARAMETER Type EC2Instance, EC2ASG, EC2KeyPair, RDSCluster, RDSInstance, or OnPremiseDatabase.
 
+  .PARAMETER SecretType SSH, WinRM or Database. Required for Auto-Scaling Groups.
+
   .PARAMETER Description Free text.
 
   .PARAMETER ARN Must be valid. Mandatory, except for OnPremiseDatabases.
@@ -87,6 +89,10 @@ param (
     [ValidateSet("EC2Instance", "EC2ASG", "EC2KeyPair", "RDSCluster", "RDSInstance", "OnPremiseDatabase")]
     [String]
     $Type,
+    [Parameter(Mandatory = $false)]
+    [ValidateSet("SSH", "WinRM", "Database")]
+    [String]
+    $SecretType,
     [Parameter(Mandatory = $false)]
     [String]
     $Description,
@@ -177,6 +183,11 @@ switch ($Type) {
             Write-Error "A username is required for an EC2 instance."
             Return $false
         }
+        if ($Response.Reservations[0].Instances[0].Platform -eq "windows") {
+            $SecretType = "SSH"
+        } else {
+            $SecretType = "WinRM"
+        }
         if ($Password -eq "" -and $PrivateKey -eq "") {
             $EC2KeyPairSecretName = "$($SecretNamePrefix)$($Response.Reservations[0].Instances[0].KeyName)"
             $SecretsManagerResponse = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager describe-secret --secret-id "$($EC2KeyPairSecretName)" | ConvertFrom-Json
@@ -239,6 +250,10 @@ switch ($Type) {
         }
         if ($Username -eq "") {
             Write-Error "A username is required for an EC2 Auto Scaling Group."
+            Return $false
+        }
+        if ($SecretType -eq "") {
+            Write-Error "A SecretType is required for an EC2 Auto Scaling Group. Choose SSH for Linux instances and WinRM for Windows instances."
             Return $false
         }
         if ($Password -eq "" -and $PrivateKey -eq "") {
@@ -319,6 +334,9 @@ switch ($Type) {
         if (-Not($Password -eq "")) {
             Write-Warning "The password is ignored for EC2 Key Pairs."
         }
+        if (-Not($SecretType -eq "")) {
+            Write-Warning "The SecretType is ignored for EC2 Key Pairs."
+        }
         if (-Not($Engine -eq "")) {
             Write-Warning "The database engine is ignored for EC2 Key Pairs."
         }
@@ -340,6 +358,7 @@ switch ($Type) {
             Return $False
         }
         $SecretName = "$($SecretNamePrefix)$($Response.KeyPairs.KeyName)"
+        $SecretType = "SSH"
         if (-Not($PrivateKey -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'privatekey' -Value $PrivateKey
         }
@@ -378,6 +397,9 @@ switch ($Type) {
             Write-Error "A password is required for an RDS Cluster."
             Return $false
         }
+        if (-Not($SecretType -eq "")) {
+            Write-Warning "The SecretType is ignored for RDS Clusters."
+        }
         if (-Not($Engine -eq "")) {
             Write-Warning "The database engine is automatically determined for an RDS Cluster."
         }
@@ -406,6 +428,7 @@ switch ($Type) {
             Write-Warning "The escalation password is ignored for an RDS Cluster."
         }
         $SecretName = "$($SecretNamePrefix)$($Response.DBClusters.DBClusterIdentifier)"
+        $SecretType = "Database"
         if ($Response.DBClusters[0].MasterUsername) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Response.DBClusters[0].MasterUsername
         }
@@ -445,6 +468,9 @@ switch ($Type) {
             Write-Error "A password is required for an RDS Instance."
             Return $false
         }
+        if (-Not($SecretType -eq "")) {
+            Write-Warning "The SecretType is ignored for RDS Instances."
+        }
         if (-Not($Engine -eq "")) {
             Write-Warning "The database engine is automatically determined for an RDS Instance."
         }
@@ -473,6 +499,7 @@ switch ($Type) {
             Write-Warning "The escalation password is ignored for an RDS Instance."
         }
         $SecretName = "$($SecretNamePrefix)$($Response.DBInstances.DBInstanceIdentifier)"
+        $SecretType = "Database"
         if ($Response.DBInstances[0].MasterUsername) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Response.DBInstances[0].MasterUsername
         }
@@ -507,6 +534,9 @@ switch ($Type) {
             Write-Error "A password is required for an on-premise database."
             Return $false
         }
+        if (-Not($SecretType -eq "")) {
+            Write-Warning "The SecretType is ignored for on-premise databases."
+        }
         if ($Engine -eq "") {
             Write-Error "The database engine is required for an on-premise database."
             Return $false
@@ -540,6 +570,7 @@ switch ($Type) {
         }
         Write-Warning "There is no resource validation performed for an on-premise database."
         $SecretName = "$($SecretNamePrefix)$($DBName)"
+        $SecretType = "Database"
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'username' -Value $Username
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'password' -Value $Password
         $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'engine' -Value $Engine
@@ -575,10 +606,10 @@ Write-Output "Using the following JSON for the Secrets Manager secret value:"
 Write-Output $SecretString
 
 if ($SecretExists) {
-    $SecretUpdate = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager update-secret --secret-id "$($SecretName)" --description "$($Description)" --secret-string '$($SecretString)' | ConvertFrom-Json
+    $SecretUpdate = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager update-secret --secret-id "$($SecretName)" --description "$($Description)" --secret-string "$($SecretString)" | ConvertFrom-Json
     aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager tag-resource --secret-id "$($SecretName)" --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($InternalARN)" Key="Environment",Value="$($Environment)"
     Return "Updated the secret named `"$($SecretUpdate.Name)`"."
 } else {
-    $SecretCreation = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager create-secret --name "$($SecretName)" --client-request-token "$([guid]::NewGuid())" --description "$($Description)" --secret-string '$($SecretString)' --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($InternalARN)" Key="Environment",Value="$($Environment)" | ConvertFrom-Json
+    $SecretCreation = aws --region "$($Region)" --profile "$($ProfileName)" secretsmanager create-secret --name "$($SecretName)" --client-request-token "$([guid]::NewGuid())" --description "$($Description)" --secret-string "$($SecretString)" --tags Key="AssetType",Value="$($Type)" Key="SecretType",Value="$($SecretType)" Key="ARN",Value="$($InternalARN)" Key="Environment",Value="$($Environment)" | ConvertFrom-Json
     Return "Created a secret named `"$($SecretCreation.Name)`"."
 }
