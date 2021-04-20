@@ -52,7 +52,7 @@ Write-Output "`n"
     $RDSDatabaseClusterARNs = @()
     $RDSDatabaseInstanceARNs = @()
     $AllARNs = @()
-    $AutoScalingInstances = (aws --region us-east-1 --profile central-aws autoscaling describe-auto-scaling-instances | ConvertFrom-Json).AutoScalingInstances.InstanceId
+    $AutoScalingInstances = (aws --region $_ --profile "$($using:ProfileName)" autoscaling describe-auto-scaling-instances | ConvertFrom-Json).AutoScalingInstances.InstanceId
     if (-Not($AutoScalingInstances)) {
         $AutoScalingInstances = @()
     }
