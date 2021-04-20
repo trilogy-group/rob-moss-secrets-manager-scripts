@@ -267,7 +267,7 @@ switch ($Type) {
             } elseif ($Response.AutoScalingGroups[0].LaunchTemplate.LaunchTemplateId -and $Response.AutoScalingGroups[0].LaunchTemplate.Version) {
                 $LaunchTemplateResponse = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-launch-template-versions --launch-template-id "$($Response.AutoScalingGroups[0].LaunchTemplate.LaunchTemplateId)" --versions "$($Response.AutoScalingGroups[0].LaunchTemplate.Version)" | ConvertFrom-Json
                 $EC2KeyPairName = $LaunchTemplateResponse.LaunchTemplateVersions[0].LaunchTemplateData.KeyName
-            } elseif ($Response.AutoScalingGroups[0].MixedInstancesPolicy.Length > 0) {
+            } elseif ($Response.AutoScalingGroups[0].MixedInstancesPolicy.Length -gt 0) {
                 foreach ($MixedInstancePolicy in $Response.AutoScalingGroups[0].MixedInstancesPolicy) {
                     $LaunchTemplateResponse = aws --region "$($Region)" --profile "$($ProfileName)" ec2 describe-launch-template-versions --launch-template-id "$($MixedInstancePolicy.LaunchTemplate.LaunchTemplateSpecification.LaunchTemplateId)" --versions "$($MixedInstancePolicy.LaunchTemplate.LaunchTemplateSpecification.Version)" | ConvertFrom-Json
                     $EC2KeyPairName = $LaunchTemplateResponse.LaunchTemplateVersions[0].LaunchTemplateData.KeyName
