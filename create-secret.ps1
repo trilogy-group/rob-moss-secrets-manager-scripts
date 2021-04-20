@@ -604,7 +604,7 @@ if ($Response.Name -eq $SecretName) {
     $SecretExists = $false
 }
 
-$SecretString = ConvertTo-Json $SecretStringObject
+$SecretString = (ConvertTo-Json $SecretStringObject) -Replace '"', '\"'
 
 Write-Output "Using the following JSON for the Secrets Manager secret value:"
 Write-Output $SecretString
