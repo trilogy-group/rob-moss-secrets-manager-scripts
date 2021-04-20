@@ -52,9 +52,13 @@ Write-Output "`n"
     $RDSDatabaseClusterARNs = @()
     $RDSDatabaseInstanceARNs = @()
     $AllARNs = @()
+    $AutoScalingInstances = (aws --region us-east-1 --profile central-aws autoscaling describe-auto-scaling-instances | ConvertFrom-Json).AutoScalingInstances.InstanceId
+    if (-Not($AutoScalingInstances)) {
+        $AutoScalingInstances = @()
+    }
     foreach ($Reservation in $EC2Instances.Reservations) {
-        if (-Not($Reservation.RequesterID -eq "940372691376")) {
-            foreach ($Instance in $Reservation.Instances) {
+        foreach ($Instance in $Reservation.Instances) {
+            if (-Not($AutoScalingInstances.Contains($Instance.InstanceId))) {
                 $ARN = "arn:aws:ec2:$($_):$($using:AccountID):instance/$($Instance.InstanceId)"
                 if ($Instance.InstanceId) {
                     if (-Not($EC2InstanceARNs.Contains($ARN))) {
