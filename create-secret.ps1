@@ -96,7 +96,7 @@ param (
     $SecretType,
     [Parameter(Mandatory = $false)]
     [String]
-    $Description,
+    $Description = " ",
     [Parameter(Mandatory = $false)]
     [ValidatePattern("^arn:[^:\n]*:[^:\n]*:[^:\n]*:[^:\n]*:[^:\/\n]*[:\/]?.*$")]
     [String]
