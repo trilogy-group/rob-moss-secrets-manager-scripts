@@ -44,7 +44,7 @@ if (-Not($Response.Account -eq $AccountID)) {
 Write-Output "List of ARNs missing secrets in Secrets Manager in account $($AccountID) with profile name $($ProfileName):"
 Write-Output "`n"
 
-(aws ec2 describe-regions | ConvertFrom-Json).Regions.RegionName | ForEach-Object -Parallel {
+(aws --profile "$ProfileName" ec2 describe-regions | ConvertFrom-Json).Regions.RegionName | ForEach-Object -Parallel {
     $EC2Instances = aws --region $_ --profile "$($using:ProfileName)" ec2 describe-instances | ConvertFrom-Json
     $EC2KeyPairARNs = @()
     $EC2InstanceARNs = @()
