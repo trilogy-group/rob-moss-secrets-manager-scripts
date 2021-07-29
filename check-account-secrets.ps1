@@ -1,3 +1,4 @@
+#Requires -Version 7.1.3
 <#
   .SYNOPSIS
   Checks that all EC2 Instances, EC2 Auto-Scaling Groups, EC2 Key Pairs, RDS database clusters, and RDS database instances in an AWS account have secrets in Secrets Manager. You must supply an AccountID and a ProfileName that match.
