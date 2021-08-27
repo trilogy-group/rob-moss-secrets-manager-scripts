@@ -49,6 +49,9 @@
 
   .PARAMETER Force Force updates to secrets that already exist.
 
+  .PARAMETER SSHPort Required for EC2 Instance and EC2 ASG. Must be numeric, from 1 to 65535.
+
+
   .INPUTS
   None. You cannot pipe objects to this script.
 
@@ -146,7 +149,11 @@ param (
     $Notes,
     [Parameter(Mandatory = $false)]
     [Bool]
-    $Force = $false
+    $Force = $false,
+    [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 65535)]
+    [int]
+    $SSHPort = 22
 )
 
 $Response = aws --region "$($Region)" --profile "$($ProfileName)" sts get-caller-identity | ConvertFrom-Json
@@ -239,6 +246,9 @@ switch ($Type) {
         if (-Not($Notes -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
         }
+        if (-Not($SSHPort -eq 22)) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'sshport' -Value $SSHPort
+        }
         Break
     }
     "EC2ASG" {
@@ -323,6 +333,9 @@ switch ($Type) {
         }
         if (-Not($Notes -eq "")) {
             $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'notes' -Value $Notes
+        }
+        if (-Not($SSHPort -eq 22)) {
+            $SecretStringObject | Add-Member -MemberType NoteProperty -Name 'sshport' -Value $SSHPort
         }
         Break
     }
