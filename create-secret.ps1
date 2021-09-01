@@ -133,6 +133,9 @@ param (
     $PrivateKey,
     [Parameter(Mandatory = $false)]
     [String]
+    $PrivateKeyFile,
+    [Parameter(Mandatory = $false)]
+    [String]
     $PrivateKeyPassword,
     [Parameter(Mandatory = $false)]
     [ValidateSet("sudo", "su", "pbrun", "pfexec", "dzdo", "pmrun", "runas", "enable", "doas", "ksu", "machinectl", "sesu")]
@@ -174,6 +177,17 @@ $SecretUpdateChoices.Add((New-Object Management.Automation.Host.ChoiceDescriptio
 $SecretStringObject = [PSCustomObject]@{}
 
 $InternalARN = $ARN -replace '[^a-zA-Z0-9 :_@\/\+\=\.\-]', ''
+
+if (-Not($PrivateKey -eq "") -and -Not($PrivateKeyFile -eq "")) {
+    Write-Error "Cannot use both PrivateKey and PrivateKeyFile. Please provide either one."
+    Return $false
+}
+if (-Not($PrivateKeyFile -eq "")) {
+    if(-Not($PrivateKey = $(Get-Content -Path $PrivateKeyFile -Raw))) {
+        Write-Error "PrivateKeyFile is not readable."
+        Return $false
+    } 
+}
 
 switch ($Type) {
     "EC2Instance" {
